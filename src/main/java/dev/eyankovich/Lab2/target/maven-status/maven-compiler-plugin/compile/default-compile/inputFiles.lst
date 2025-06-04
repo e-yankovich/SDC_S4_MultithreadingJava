@@ -6,6 +6,7 @@
 /Users/evgeniya/development/projects/univetsity/SDC_S4_MultithreadingJava/src/main/java/dev/eyankovich/Lab2/src/main/java/com/ferry/manager/FerryManager.java
 /Users/evgeniya/development/projects/univetsity/SDC_S4_MultithreadingJava/src/main/java/dev/eyankovich/Lab2/src/main/java/com/ferry/state/FerryState.java
 /Users/evgeniya/development/projects/univetsity/SDC_S4_MultithreadingJava/src/main/java/dev/eyankovich/Lab2/src/main/java/com/ferry/state/LoadingState.java
+/Users/evgeniya/development/projects/univetsity/SDC_S4_MultithreadingJava/src/main/java/dev/eyankovich/Lab2/src/main/java/com/ferry/state/SailingBackState.java
 /Users/evgeniya/development/projects/univetsity/SDC_S4_MultithreadingJava/src/main/java/dev/eyankovich/Lab2/src/main/java/com/ferry/state/SailingState.java
 /Users/evgeniya/development/projects/univetsity/SDC_S4_MultithreadingJava/src/main/java/dev/eyankovich/Lab2/src/main/java/com/ferry/state/UnloadingState.java
 /Users/evgeniya/development/projects/univetsity/SDC_S4_MultithreadingJava/src/main/java/dev/eyankovich/Lab2/src/main/java/com/ferry/util/Initializer.java

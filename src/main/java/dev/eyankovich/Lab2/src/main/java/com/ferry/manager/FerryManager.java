@@ -55,25 +55,43 @@ public class FerryManager {
             while (true) {
                 lock.lock();
                 try {
-                    // если очередь пуста — ждём сигнал
-                    if (waitingQueue.isEmpty()) {
-                        ferryNotFull.await(1, TimeUnit.SECONDS); // ждём не вечно
+                    // Wait until the ferry is ready for loading and there are vehicles in the queue
+                    while (!ferry.isReadyForLoading() || waitingQueue.isEmpty()) {
+                        logger.debug("Dispatcher waiting for signal. Ferry ready: {}, Queue size: {}", 
+                            ferry.isReadyForLoading(), waitingQueue.size());
+                        ferryNotFull.await();
+                        logger.debug("Dispatcher received signal. Ferry ready: {}, Queue size: {}", 
+                            ferry.isReadyForLoading(), waitingQueue.size());
                     }
 
-                    // снова проверяем очередь
-                    while (!waitingQueue.isEmpty()) {
+                    boolean loadedAny = false;
+                    // Load vehicles onto the ferry until it's full or queue is empty
+                    while (!waitingQueue.isEmpty() && ferry.isReadyForLoading()) {
                         Vehicle v = waitingQueue.peek();
+                        logger.debug("Attempting to load {} {}. Ferry onboard count: {}", 
+                            v.getType(), v.getId(), ferry.getOnboardSnapshot().size());
                         if (ferry.tryAddVehicle(v)) {
                             waitingQueue.poll();
+                            loadedAny = true;
                             logger.info("{} {} boarded the ferry.", v.getType(), v.getId());
                         } else {
+                            if (ferry.getOnboardSnapshot().isEmpty()) {
+                                waitingQueue.poll();
+                                logger.warn("{} {} cannot fit on the empty ferry and will be skipped.", 
+                                    v.getType(), v.getId());
+                                continue;
+                            }
                             break;
                         }
                     }
 
-                    // если есть кто-то на борту — плывём
-                    if (!ferry.getOnboardSnapshot().isEmpty()) {
-                        ferry.sailAndReset();
+                    logger.debug("After loading: Ferry onboard count: {}. Queue size: {}", 
+                        ferry.getOnboardSnapshot().size(), waitingQueue.size());
+
+                    if (loadedAny) {
+                        logger.debug("Starting ferry trip with {} vehicles onboard.", 
+                            ferry.getOnboardSnapshot().size());
+                        new Thread(ferry::sailAndReset).start();
                     }
 
                 } catch (InterruptedException e) {
@@ -83,8 +101,9 @@ public class FerryManager {
                     lock.unlock();
                 }
 
-                // Мини-пауза перед новой итерацией
+                // Wait for the next signal before checking conditions again
                 try {
+                    logger.debug("Dispatcher waiting for next signal...");
                     TimeUnit.MILLISECONDS.sleep(200);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -97,39 +116,32 @@ public class FerryManager {
         dispatcher.start();
     }
 
+    public void signalDispatcher() {
+        lock.lock();
+        try {
+            logger.debug("Signaling dispatcher to check the queue.");
+            ferryNotFull.signalAll();
+        } finally {
+            lock.unlock();
+        }
+    }
 
+    public boolean isQueueEmpty() {
+        lock.lock();
+        try {
+            return waitingQueue.isEmpty();
+        } finally {
+            lock.unlock();
+        }
+    }
 
-
-//    public void signalDispatcher() {
-//        lock.lock();
-//        try {
-//            ferryNotFull.signalAll();
-//            //tryStartFerryCycle();
-//        } finally {
-//            lock.unlock();
-//        }
-//    }
-//
-//    public void tryStartFerryCycle() {
-//        lock.lock();
-//        try {
-//            while (!waitingQueue.isEmpty()) {
-//                Vehicle v = waitingQueue.peek();
-//                if (ferry.tryAddVehicle(v)) {
-//                    waitingQueue.poll();
-//                    logger.info("{} {} boarded the ferry.", v.getType(), v.getId());
-//                } else {
-//                    break;
-//                }
-//            }
-//
-//            if (!ferry.getOnboardSnapshot().isEmpty()) {
-//                ferry.sailAndReset();
-//            }
-//
-//        } finally {
-//            lock.unlock();
-//        }
-//    }
+    public boolean isFerryReady() {
+        lock.lock();
+        try {
+            return ferry.isReadyForLoading();
+        } finally {
+            lock.unlock();
+        }
+    }
 
 }
