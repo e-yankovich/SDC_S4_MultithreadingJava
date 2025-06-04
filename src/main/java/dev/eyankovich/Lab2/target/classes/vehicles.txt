@@ -1,0 +1,4 @@
+Car C1 1200 5
+Truck T1 5000 15
+Car C2 1300 6
+Truck T2 4800 14
