@@ -16,7 +16,13 @@ public class ConsumerThread extends Thread {
             int remainingTime = countdownMillis;
 
             while (running && remainingTime > 0) {
-                if (producer.getCurrentState()) {
+                synchronized (producer) {
+                    // solution with while is not optimal. will determine why and fix
+                    while (!producer.getCurrentState()) {
+                        System.out.println("Consumer: Waiting for producer state to become true");
+                        producer.wait();
+                    }
+
                     System.out.println("Consumer: Countdown - " + remainingTime + " ms");
                     remainingTime -= checkDelayMillis;
 
@@ -26,12 +32,9 @@ public class ConsumerThread extends Thread {
                         running = false;
                         break;
                     }
+                }
 
                     Thread.sleep(checkDelayMillis);
-                } else {
-                    System.out.println("Consumer: Waiting for producer state to become true");
-                    Thread.sleep(checkDelayMillis);
-                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
